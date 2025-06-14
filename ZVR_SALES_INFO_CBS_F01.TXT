@@ -1,0 +1,416 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZVR_SALES_INFO_CBS_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Form  INITIALIZE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM initialize .
+
+***remove the content of work areas
+  CLEAR : gs_sales.
+
+***remove the content of internal tables
+  REFRESH : gt_f4_kunnr, gt_sales.
+
+****default value for sd type
+*  s_auart-sign = 'I'.
+*  s_auart-option = 'EQ'.
+*  s_auart-low = 'AF'.    "'IN'.
+*  APPEND s_auart.
+*
+*  s_auart-sign = 'I'.
+*  s_auart-option = 'EQ'.
+*  s_auart-low = 'AG'.     "'QT'.
+*  APPEND s_auart.
+*
+*  s_auart-sign = 'I'.
+*  s_auart-option = 'EQ'.
+*  s_auart-low = 'TA'.    "'OR'.
+*  APPEND s_auart.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  VALIDATE_SDNO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM validate_sdno .
+
+***validate sales document no. ftom check table - VBUK
+  SELECT SINGLE vbeln FROM vbuk INTO gv_vbeln_val WHERE vbeln IN s_vbeln.
+  IF sy-subrc <> 0.
+    MESSAGE e005(zv_msg_cl).
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_F4_HELP_KUNNR
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_f4_help_kunnr .
+
+***get sold-to-party info in f4 itab
+  SELECT a~kunnr
+         a~name1
+         a~telf1
+         a~sortl
+         b~vbeln
+         b~ernam
+         b~erdat INTO TABLE gt_f4_kunnr
+                 FROM kna1 AS a
+                 INNER JOIN vbak AS b
+                 ON a~kunnr = b~kunnr.
+  IF sy-subrc = 0.
+***attach itab data to screen field
+    CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+      EXPORTING
+*       DDIC_STRUCTURE  = ' '
+        retfield        = 'KUNNR'
+*       PVALKEY         = ' '
+        dynpprog        = sy-cprog
+        dynpnr          = '1000'
+        dynprofield     = 'S_KUNNR'
+*       STEPL           = 0
+        window_title    = 'User specific F4 Help for SP'
+*       VALUE           = ' '
+        value_org       = 'S'
+*       MULTIPLE_CHOICE = ' '
+*       DISPLAY         = ' '
+*       CALLBACK_PROGRAM       = ' '
+*       CALLBACK_FORM   = ' '
+*       CALLBACK_METHOD =
+*       MARK_TAB        =
+* IMPORTING
+*       USER_RESET      =
+      TABLES
+        value_tab       = gt_f4_kunnr
+*       FIELD_TAB       =
+*       RETURN_TAB      =
+*       DYNPFLD_MAPPING =
+      EXCEPTIONS
+        parameter_error = 1
+        no_values_found = 2
+        OTHERS          = 3.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_F1_HELP_AUART
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_f1_help_auart .
+
+***attach f1 help for SD cat.
+  CALL FUNCTION 'DSYS_SHOW_FOR_F1HELP'
+    EXPORTING
+*     APPLICATION      = 'SO70'
+      dokclass         = 'TX'
+      doklangu         = sy-langu
+      dokname          = 'ZF1_AUART'
+*     DOKTITLE         = ' '
+*     HOMETEXT         = ' '
+*     OUTLINE          = ' '
+*     VIEWNAME         = 'STANDARD'
+*     Z_ORIGINAL_OUTLINE       = ' '
+*     CALLED_FROM_SO70 = ' '
+*     SHORT_TEXT       = ' '
+*     APPENDIX         = ' '
+* IMPORTING
+*     APPL             =
+*     PF03             =
+*     PF15             =
+*     PF12             =
+    EXCEPTIONS
+      class_unknown    = 1
+      object_not_found = 2
+      OTHERS           = 3.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_SALES_INFO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM get_sales_info .
+
+***fetch sales header and item info from VBAK and VBAP tables
+  SELECT a~vbeln
+         a~ernam
+         a~erdat
+         a~vbtyp
+         a~auart
+         a~kunnr
+         b~posnr
+         b~matnr
+         b~kwmeng
+         b~meins
+         b~netwr
+         b~waerk  INTO TABLE gt_sales
+                  FROM vbak AS a
+                  INNER JOIN vbap AS b
+                  ON a~vbeln = b~vbeln
+                  WHERE a~vbeln IN s_vbeln
+                  AND   a~kunnr IN s_kunnr
+                  AND   a~auart IN s_auart.
+  IF sy-subrc <> 0.
+    MESSAGE e006(zv_msg_cl).
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  HEADER_INFO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM header_info .
+
+***display header from Function module
+  CALL FUNCTION 'ZVFM_HEADER'.
+  SKIP 2.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  FOOTER_INFO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM footer_info .
+
+  SKIP.
+  WRITE :/50 'URL: www.accenture.com' COLOR 6,150 'Page No.' COLOR 6, sy-pagno COLOR 6.
+  WRITE :/50 'Email: info@accenture.com' COLOR 6.
+  WRITE :/50 'Contact: 040 - 5555 6666' COLOR 6.
+  WRITE :/50 'This is computer generated report' COLOR 6.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_SALES_INFO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM display_sales_info .
+
+  DATA : lv_flag            TYPE c,
+         ls_amount_in_words TYPE string.
+
+***display sales info
+  LOOP AT gt_sales INTO gs_sales.
+
+***calculate subtotal
+    gv_subttl = gv_subttl + gs_sales-netwr.
+
+***calculate grand total
+    gv_grdttl = gv_grdttl + gs_sales-netwr.
+
+***provide column headings
+    AT FIRST.
+      WRITE :/2  'SD Number'    ,
+             15  'Created By'   ,
+             30  'Created Date' ,
+             45  'SD Cat.'      ,
+             56  'SD Type'      ,
+             65  'Sold-to-party',
+             85  'SD Item'      ,
+             95  'Material'     ,
+             115 'Quantity'     ,
+             135 'UoM'          ,
+             145 'Price'        ,
+             175 'Currency'     .
+    ENDAT.
+
+***print header info only once for every sales doc no.
+    AT NEW vbeln.
+      READ TABLE gt_sales INTO gs_sales WITH KEY vbeln = gs_sales-vbeln.
+      WRITE :/ gs_sales-vbeln UNDER 'SD Number'     COLOR 1,
+               gs_sales-ernam UNDER 'Created By'    COLOR 1,
+               gs_sales-erdat UNDER 'Created Date'  COLOR 1,
+               gs_sales-vbtyp UNDER 'SD Cat.'       COLOR 1,
+               gs_sales-auart UNDER 'SD Type'       COLOR 1,
+               gs_sales-kunnr UNDER 'Sold-to-party' COLOR 1.
+      lv_flag = 'X'.
+    ENDAT.
+
+***remove leading for SD Item no.
+    PERFORM remove_leading_zero USING gs_sales-posnr.
+
+    IF lv_flag = 'X'.
+      WRITE:  gs_sales-posnr UNDER 'SD Item'       COLOR 2,
+               gs_sales-matnr UNDER 'Material'      COLOR 2,
+               gs_sales-kwmeng UNDER 'Quantity'      COLOR 2,
+               gs_sales-meins UNDER 'UoM'           COLOR 2,
+               gs_sales-netwr UNDER 'Price'         COLOR 2,
+               gs_sales-waerk UNDER 'Currency'      COLOR 2.
+      CLEAR lv_flag.
+    ELSE.
+      WRITE:/  gs_sales-posnr UNDER 'SD Item'       COLOR 2,
+               gs_sales-matnr UNDER 'Material'      COLOR 2,
+               gs_sales-kwmeng UNDER 'Quantity'      COLOR 2,
+               gs_sales-meins UNDER 'UoM'           COLOR 2,
+               gs_sales-netwr UNDER 'Price'         COLOR 2,
+               gs_sales-waerk UNDER 'Currency'      COLOR 2.
+    ENDIF.
+
+***display subtotal at end of sales document no.
+    IF p_total = 'S' OR p_total = 'B'.
+      AT END OF vbeln.
+***convert amount in words
+        PERFORM amount_in_words USING gv_subttl
+                                CHANGING gs_spell.
+
+        WRITE :/65 sy-uline(200).
+        WRITE :/70 'Sub Total' COLOR 5,130 gv_subttl COLOR 5.
+        CONCATENATE 'Amount in words:' gs_spell-word '.' gs_spell-decword  INTO ls_amount_in_words SEPARATED BY ' '.
+        CONDENSE ls_amount_in_words.
+        WRITE :/70 ls_amount_in_words COLOR 5.
+        WRITE :/65 sy-uline(200).
+        CLEAR gv_subttl.
+      ENDAT.
+    ENDIF.
+
+***display grand total at end of all the documents
+    IF p_total = 'G' OR p_total = 'B'.
+      AT LAST.
+***convert amount in words
+        CLEAR gs_spell.
+        PERFORM amount_in_words USING gv_grdttl
+                                CHANGING gs_spell.
+
+        WRITE :/10 sy-uline(250).
+        WRITE :/20 'Grand Total:' COLOR 4,130 gv_grdttl COLOR 4.
+        CONCATENATE 'Amount in words:' gs_spell-word '.' gs_spell-decword  INTO ls_amount_in_words SEPARATED BY ' '.
+        CONDENSE ls_amount_in_words.
+        WRITE :/20 ls_amount_in_words COLOR 4.
+        WRITE :/10 sy-uline(250).
+      ENDAT.
+    ENDIF.
+
+    CLEAR gs_sales.
+  ENDLOOP.
+
+  gv_skip = sy-linct - sy-linno.
+  SKIP gv_skip.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  REMOVE_LEADING_ZERO
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_GS_SALES_POSNR  text
+*----------------------------------------------------------------------*
+FORM remove_leading_zero  USING field.
+
+  CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+    EXPORTING
+      input  = field
+    IMPORTING
+      output = field.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  AMOUNT_IN_WORDS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_GS_SUBTTL  text
+*      <--P_GS_SPELL  text
+*----------------------------------------------------------------------*
+FORM amount_in_words  USING    amount
+                      CHANGING ls_spell.
+
+  CALL FUNCTION 'SPELL_AMOUNT'
+    EXPORTING
+      amount    = amount
+      currency  = 'INR'
+*     FILLER    = ' '
+      language  = sy-langu
+    IMPORTING
+      in_words  = ls_spell
+    EXCEPTIONS
+      not_found = 1
+      too_large = 2
+      OTHERS    = 3.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  TOTAL_TYPE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM total_type .
+
+***fill total type
+  gs_ttl_vrm-key = 'S'.
+  gs_ttl_vrm-text = 'Sub Total'.
+  APPEND gs_ttl_vrm TO gt_ttl_vrm.
+  CLEAR gs_ttl_vrm.
+
+  gs_ttl_vrm-key = 'G'.
+  gs_ttl_vrm-text = 'Grand Total'.
+  APPEND gs_ttl_vrm TO gt_ttl_vrm.
+  CLEAR gs_ttl_vrm.
+
+  gs_ttl_vrm-key = 'B'.
+  gs_ttl_vrm-text = 'Both'.
+  APPEND gs_ttl_vrm TO gt_ttl_vrm.
+  CLEAR gs_ttl_vrm.
+
+  gs_ttl_vrm-key = 'N'.
+  gs_ttl_vrm-text = 'None'.
+  APPEND gs_ttl_vrm TO gt_ttl_vrm.
+  CLEAR gs_ttl_vrm.
+
+***attach to screen field
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id              = 'P_TOTAL'
+      values          = gt_ttl_vrm
+    EXCEPTIONS
+      id_illegal_name = 1
+      OTHERS          = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.

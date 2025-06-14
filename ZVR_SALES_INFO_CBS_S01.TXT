@@ -1,0 +1,12 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZVR_SALES_INFO_CBS_S01
+*&---------------------------------------------------------------------*
+***screen design
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+SELECTION-SCREEN SKIP.
+SELECT-OPTIONS : s_vbeln FOR gs_sales-vbeln,
+                 s_kunnr FOR gs_sales-kunnr,
+                 s_auart FOR gs_sales-auart NO INTERVALS.
+SELECTION-SCREEN SKIP.
+PARAMETERS p_total AS LISTBOX VISIBLE LENGTH 20 DEFAULT 'N'.
+SELECTION-SCREEN END OF BLOCK b1 .

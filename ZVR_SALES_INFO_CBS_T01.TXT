@@ -1,0 +1,42 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZVR_SALES_INFO_CBS_T01
+*&---------------------------------------------------------------------*
+***type-pools
+TYPE-POOLS vrm.
+
+***declaration of types structures
+TYPES : BEGIN OF ty_f4_kunnr,
+          kunnr TYPE kna1-kunnr,
+          name1 TYPE kna1-name1,
+          telf1 TYPE kna1-telf1,
+          sortl TYPE kna1-sortl,
+          vbeln TYPE vbak-vbeln,
+          ernam TYPE vbak-ernam,
+          erdat TYPE vbak-erdat,
+        END OF ty_f4_kunnr,
+        BEGIN OF ty_sales,
+          vbeln  TYPE vbak-vbeln,
+          ernam  TYPE vbak-ernam,
+          erdat  TYPE vbak-erdat,
+          vbtyp  TYPE vbak-vbtyp,
+          auart  TYPE vbak-auart,
+          kunnr  TYPE vbak-kunnr,
+          posnr  TYPE vbap-posnr,
+          matnr  TYPE vbap-matnr,
+          kwmeng TYPE vbap-kwmeng,
+          meins  TYPE vbap-meins,
+          netwr  TYPE vbap-netwr,
+          waerk  TYPE vbap-waerk,
+        END OF ty_sales.
+
+***declaration of variables, work areas and internal tables
+DATA : gt_f4_kunnr  TYPE TABLE OF ty_f4_kunnr,
+       gs_sales     TYPE ty_sales,
+       gt_sales     TYPE TABLE OF ty_sales,
+       gv_vbeln_val TYPE vbuk-vbeln,
+       gv_skip      TYPE i,
+       gv_subttl    TYPE vbap-netwr,
+       gv_grdttl    TYPE vbap-netwr,
+       gs_spell     TYPE spell,
+       gs_ttl_vrm   TYPE vrm_value,
+       gt_ttl_vrm   TYPE vrm_values.

@@ -1,0 +1,50 @@
+REPORT zvr_sales_info_cbs_cr2 NO STANDARD PAGE HEADING
+                              LINE-COUNT 40(5)
+                              LINE-SIZE 300.
+
+***1st include with top declarations
+INCLUDE zvr_sales_info_cbs_t01.
+
+***2nd include with selection screen design
+INCLUDE zvr_sales_info_cbs_s01.
+
+***3rd include with definitions of subroutines
+INCLUDE zvr_sales_info_cbs_f01.
+
+***initialize
+INITIALIZATION.
+  PERFORM initialize.
+
+***validate sales document from check table (VBUK)
+AT SELECTION-SCREEN.
+  PERFORM validate_sdno.
+
+***provide search help for sold-to-party field
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_kunnr-low.
+  PERFORM get_f4_help_kunnr.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR s_kunnr-high.
+  PERFORM get_f4_help_kunnr.
+
+***provide f1 help for SD type
+AT SELECTION-SCREEN ON HELP-REQUEST FOR s_auart-low.
+  PERFORM get_f1_help_auart.
+
+AT SELECTION-SCREEN OUTPUT.
+  PERFORM total_type.
+
+***get sales header and item info
+START-OF-SELECTION.
+  PERFORM get_sales_info.
+
+***provide header info
+TOP-OF-PAGE.
+  PERFORM header_info.
+
+***provide footer info
+END-OF-PAGE.
+  PERFORM footer_info.
+
+***display sales info
+END-OF-SELECTION.
+  PERFORM display_sales_info.
